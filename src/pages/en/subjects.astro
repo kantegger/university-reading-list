@@ -1,0 +1,5 @@
+---
+// Redirect /en/subjects to /subjects for backward compatibility
+const searchParams = Astro.url.search;
+return Astro.redirect(`/subjects${searchParams}`, 301);
+---

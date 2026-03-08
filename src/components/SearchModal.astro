@@ -1,0 +1,128 @@
+---
+// Search Modal Component
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<!-- 搜索模态框 -->
+<div id="search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+  <div class="flex items-start justify-center min-h-screen pt-16 px-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
+      <!-- 搜索框 -->
+      <div class="p-4 border-b border-gray-200">
+        <div class="relative">
+          <input
+            type="text"
+            id="modal-search-input"
+            placeholder={t('search.placeholder')}
+            class="w-full p-3 pl-10 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            aria-label={t('search.placeholder')}
+            aria-describedby="modal-search-results"
+            autocomplete="off"
+            autofocus
+          />
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg
+              class="h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <button
+            id="close-search-modal"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            aria-label={t('ui.close')}
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 搜索结果 -->
+      <div id="modal-search-results" class="p-4 max-h-64 overflow-y-auto">
+        <!-- 初始状态：推荐搜索 -->
+        <div id="modal-search-empty" class="space-y-4">
+          <div class="text-sm text-gray-500 mb-3">{t('search.popular')}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              class="search-suggestion bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              data-query={t('search.popular.economics')}
+            >
+              {t('search.popular.economics')}
+            </button>
+            <button
+              class="search-suggestion bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              data-query={t('search.popular.law')}
+            >
+              {t('search.popular.law')}
+            </button>
+            <button
+              class="search-suggestion bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              data-query={t('search.popular.math')}
+            >
+              {t('search.popular.math')}
+            </button>
+            <button
+              class="search-suggestion bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg text-left text-sm transition-colors"
+              data-query={t('search.popular.politics')}
+            >
+              {t('search.popular.politics')}
+            </button>
+          </div>
+        </div>
+
+        <!-- 搜索结果列表 -->
+        <div id="modal-search-results-list" class="hidden space-y-2">
+          <!-- 动态填充搜索结果 -->
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="modal-search-loading" class="hidden text-center py-8">
+          <div
+            class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-blue-500 bg-blue-50"
+          >
+            <svg
+              class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            {t('ui.loading')}
+          </div>
+        </div>
+
+        <!-- 无结果状态 -->
+        <div id="modal-search-no-results" class="hidden text-center py-8">
+          <div class="text-gray-500 text-sm">{t('ui.no.results')}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

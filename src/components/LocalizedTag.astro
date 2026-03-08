@@ -1,0 +1,20 @@
+---
+import { translateTag } from '../i18n/utils';
+
+export interface Props {
+  tag: string;
+  lang: string;
+  class?: string;
+}
+
+const {
+  tag,
+  lang,
+  class: className = 'inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700',
+} = Astro.props;
+const translatedTag = translateTag(tag, lang);
+---
+
+<span class={className}>
+  {translatedTag}
+</span>

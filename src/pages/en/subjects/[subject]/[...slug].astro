@@ -1,0 +1,23 @@
+---
+import { getAllContentByLanguage } from '../../../../lib/content-utils';
+
+export async function getStaticPaths() {
+  const allBooks = await getAllContentByLanguage('en');
+
+  return allBooks.map(book => ({
+    params: {
+      subject: book.subject,
+      slug: book.bookSlug,
+    },
+    props: {
+      subject: book.subject,
+      slug: book.bookSlug,
+    },
+  }));
+}
+
+const { subject, slug } = Astro.props;
+
+// Redirect /en/subjects/[subject]/[slug] to /subjects/[subject]/[slug] for backward compatibility
+return Astro.redirect(`/subjects/${subject}/${slug}`, 301);
+---

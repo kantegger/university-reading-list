@@ -1,0 +1,67 @@
+---
+import SEOHead from '../components/SEOHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SearchModal from '../components/SearchModal.astro';
+import SearchScript from '../components/SearchScript.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  noindex?: boolean;
+}
+
+const currentLang = getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+
+const { 
+  title, 
+  description = t('site.description'), 
+  image = "/og-image.svg",
+  canonical,
+  noindex = false
+} = Astro.props;
+
+const siteTitle = t('site.title');
+const fullTitle = title === siteTitle ? title : `${title} - ${siteTitle}`;
+const siteUrl = "https://unireadinglist.com";
+const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).toString();
+
+// Set language attribute
+const langAttr = currentLang === 'zh-cn' ? 'zh-CN' : 
+                 currentLang === 'zh-tw' ? 'zh-TW' : 
+                 currentLang;
+---
+
+<!DOCTYPE html>
+<html lang={langAttr}>
+  <SEOHead 
+    title={fullTitle}
+    description={description}
+    image={image}
+    canonical={canonicalUrl}
+    noindex={noindex}
+    siteTitle={siteTitle}
+  />
+  <!-- Preload Critical Resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <body class="min-h-screen bg-gray-50 font-sans">
+    <Header />
+    
+    <!-- Main Content -->
+    <main>
+      <slot />
+    </main>
+
+    <Footer />
+    <SearchModal />
+    <SearchScript />
+  </body>
+</html>

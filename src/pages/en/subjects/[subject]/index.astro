@@ -1,0 +1,17 @@
+---
+import { getAvailableSubjects } from '../../../../lib/content-utils';
+
+export async function getStaticPaths() {
+  const availableSubjects = await getAvailableSubjects('en');
+
+  return availableSubjects.map(subject => ({
+    params: { subject: subject.toLowerCase().replace(/\s+/g, '-') },
+    props: { subject },
+  }));
+}
+
+const { subject } = Astro.props;
+
+// Redirect /en/subjects/[subject] to /subjects/[subject] for backward compatibility
+return Astro.redirect(`/subjects/${subject}`, 301);
+---

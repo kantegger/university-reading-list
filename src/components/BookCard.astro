@@ -1,0 +1,203 @@
+---
+import { Image } from 'astro:assets';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+// Define types first
+type CategoryKey =
+  | 'economics'
+  | 'law'
+  | 'mathematics'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'computer-science'
+  | 'psychology'
+  | 'sociology'
+  | 'philosophy'
+  | 'history'
+  | 'literature'
+  | 'linguistics'
+  | 'political-science'
+  | 'geography'
+  | 'anthropology'
+  | 'education'
+  | 'medicine'
+  | 'engineering'
+  | 'business'
+  | 'art';
+type DifficultyKey = 'beginner' | 'intermediate' | 'advanced';
+
+export interface Props {
+  title?: string;
+  author?: string;
+  description?: string;
+  category?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  level?: 'undergraduate' | 'graduate' | 'advanced';
+  cover?: string;
+  amazonLink?: string;
+  price?: string;
+  rating?: number;
+  tags?: string[];
+  slug?: string;
+  book?: any; // For passing entire book object
+  hideLabels?: boolean; // Hide category and difficulty labels
+  priority?: boolean; // Control image loading priority
+}
+
+// Handle both individual props and book object
+const props = Astro.props;
+const bookData = props.book ? props.book.data : props;
+const bookSlug = props.book ? props.book.slug : props.slug;
+
+// Get current language for proper routing
+const currentLang = getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+
+const {
+  title,
+  author,
+  description,
+  category,
+  difficulty,
+  level,
+  cover,
+  amazonLink,
+  price,
+  rating,
+  tags = [], // Default to empty array to prevent undefined error
+  hideLabels = false, // Default to show labels
+  priority = false, // Default to lazy loading
+} = props.book ? { ...bookData, hideLabels: props.hideLabels, priority: props.priority } : props;
+
+// Remove subject prefix from slug to match the URL structure
+const slug = bookSlug
+  ? bookSlug.split('/').slice(1).join('/') || bookSlug.split('/').pop()
+  : bookSlug;
+
+const difficultyColors: Record<DifficultyKey, string> = {
+  beginner: 'bg-green-100 text-green-800',
+  intermediate: 'bg-yellow-100 text-yellow-800',
+  advanced: 'bg-red-100 text-red-800',
+} as const;
+
+// Helper function to get translated category name
+function getCategoryName(category: string): string {
+  return t(`subject.${category}` as any) || category;
+}
+
+// Helper function to get translated difficulty name
+function getDifficultyName(difficulty: string): string {
+  return t(`difficulty.${difficulty}` as any) || difficulty;
+}
+
+// Helper for localized URLs - English has no prefix
+const langPrefix = currentLang === 'en' ? '' : `/${currentLang}`;
+---
+
+<div class="flex flex-col h-full p-4">
+  <!-- 书籍封面 - 居中显示，可点击 -->
+  <div class="flex justify-center mb-4">
+    <a href={`${langPrefix}/subjects/${category}/${slug}`} class="block w-32 h-48 group">
+      {
+        cover ? (
+          <Image
+            src={cover}
+            alt={`${title} 封面`}
+            width={128}
+            height={192}
+            class="w-full h-full object-cover rounded shadow-sm transition-all duration-300 group-hover:shadow-[0_10px_20px_0px_rgba(59,130,246,0.4)] group-hover:scale-105 group-hover:border-2 group-hover:border-blue-200 cursor-pointer"
+            loading={priority ? 'eager' : 'lazy'}
+            decoding={priority ? 'sync' : 'async'}
+            fetchpriority={priority ? 'high' : 'low'}
+            sizes="(max-width: 640px) 128px, (max-width: 1024px) 128px, 128px"
+          />
+        ) : (
+          <div class="w-full h-full bg-gray-200 rounded flex items-center justify-center transition-all duration-300 group-hover:bg-gray-300 group-hover:shadow-lg group-hover:scale-105 cursor-pointer">
+            <svg
+              class="w-8 h-8 text-gray-400 group-hover:text-gray-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        )
+      }
+    </a>
+  </div>
+
+  <!-- 书籍基本信息 -->
+  <div class="text-center mb-3">
+    <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+      <a
+        href={`${langPrefix}/subjects/${category}/${slug}`}
+        class="hover:text-blue-600 transition-colors"
+      >
+        {title}
+      </a>
+    </h3>
+    <p class="text-sm text-gray-600 mb-2">
+      {
+        author &&
+        (author.includes(',') ||
+          author.includes('、') ||
+          author.includes(' and ') ||
+          author.includes(' & '))
+          ? author.split(/[,、]|and|&/)[0].trim() + ' et al.'
+          : author
+      }
+    </p>
+
+    <!-- 分类、难度和级别标签 -->
+    {
+      !hideLabels && (
+        <div class="flex flex-wrap justify-center items-center gap-2 mb-3">
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            {category ? getCategoryName(category) : ''}
+          </span>
+          {difficulty && (
+            <span
+              class={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${difficultyColors[difficulty as DifficultyKey]}`}
+            >
+              {getDifficultyName(difficulty)}
+            </span>
+          )}
+          {level && level !== 'undefined' && (
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              {level === 'undergraduate'
+                ? t('book.level.undergraduate')
+                : level === 'graduate'
+                  ? t('book.level.graduate')
+                  : level === 'advanced'
+                    ? t('book.level.advanced')
+                    : level}
+            </span>
+          )}
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Tags section has been removed as per user request -->
+</div>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

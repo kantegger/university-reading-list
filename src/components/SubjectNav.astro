@@ -1,0 +1,149 @@
+---
+import { getLangFromUrl, useTranslations, getSubjectTranslationKey } from '../i18n/utils';
+import { getAllContentByLanguage, languages, type Language } from '../lib/content-utils';
+
+const currentLang = getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+
+// Normalise language for content lookups
+const langForContent: Language = languages.includes(currentLang as Language)
+  ? (currentLang as Language)
+  : 'en';
+
+// Get all books to calculate counts based on current language
+const allBooks = await getAllContentByLanguage(langForContent);
+
+// Group books by subject
+const booksBySubject = allBooks.reduce(
+  (acc, book) => {
+    const category = book.subject;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(book);
+    return acc;
+  },
+  {} as Record<string, typeof allBooks>
+);
+
+// Subject configuration (only show top-level subjects, max 20)
+const subjects = [
+  { id: 'economics', icon: '📊' },
+  { id: 'law', icon: '⚖️' },
+  { id: 'mathematics', icon: '🔢' },
+  { id: 'physics', icon: '⚛️' },
+  { id: 'chemistry', icon: '🧪' },
+  { id: 'biology', icon: '🧬' },
+  { id: 'computer-science', icon: '💻' },
+  { id: 'psychology', icon: '🧠' },
+  { id: 'sociology', icon: '👥' },
+  { id: 'philosophy', icon: '💭' },
+  { id: 'history', icon: '📜' },
+  { id: 'literature', icon: '📚' },
+  { id: 'linguistics', icon: '🗣️' },
+  { id: 'political-science', icon: '🏛️' },
+  { id: 'geography', icon: '🌍' },
+  { id: 'anthropology', icon: '🏺' },
+  { id: 'education', icon: '🎓' },
+  { id: 'medicine', icon: '⚕️' },
+  { id: 'biomedical-engineering', icon: '🔬' },
+  { id: 'engineering', icon: '⚙️' },
+  { id: 'business', icon: '💼' },
+];
+
+// Add book count and translated name to each subject
+const subjectsWithCount = subjects.map(subject => ({
+  ...subject,
+  name: t(getSubjectTranslationKey(subject.id)),
+  count: booksBySubject[subject.id]?.length || 0,
+}));
+
+// Get the language prefix for URLs - English has no prefix
+const langPrefix = currentLang === 'en' ? '' : `/${currentLang}`;
+---
+
+<!-- Mobile Dropdown (visible only on mobile) -->
+<div class="block sm:hidden">
+  <div class="relative">
+    <button
+      id="subject-dropdown-btn"
+      type="button"
+      class="w-full flex items-center justify-between px-4 py-3 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+    >
+      <span>{t('subjects.all')}</span>
+      <svg
+        class="ml-2 h-5 w-5 text-gray-400"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+          clip-rule="evenodd"></path>
+      </svg>
+    </button>
+
+    <div
+      id="subject-dropdown-menu"
+      class="hidden absolute z-10 mt-2 w-full rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+    >
+      <div class="py-1 max-h-60 overflow-y-auto">
+        {
+          subjectsWithCount.map(subject => (
+            <a
+              href={`${langPrefix}/subjects?subject=${subject.id}`}
+              class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              <span class="flex items-center">
+                <span class="mr-2">{subject.icon}</span>
+                <span>{subject.name}</span>
+              </span>
+              <span class="text-xs text-gray-500 ml-2">{subject.count}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Desktop Grid (hidden on mobile) -->
+<div class="hidden sm:grid sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+  {
+    subjectsWithCount.map(subject => (
+      <a
+        href={`${langPrefix}/subjects?subject=${subject.id}`}
+        class="flex items-center justify-between px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 bg-white text-sm"
+      >
+        <span class="font-medium text-gray-900 truncate">{subject.name}</span>
+        <span class="text-xs text-gray-500 ml-2 flex-shrink-0">{subject.count}</span>
+      </a>
+    ))
+  }
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropdownBtn = document.getElementById('subject-dropdown-btn');
+    const dropdownMenu = document.getElementById('subject-dropdown-menu');
+
+    if (dropdownBtn && dropdownMenu) {
+      // Toggle dropdown
+      dropdownBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle('hidden');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', () => {
+        dropdownMenu.classList.add('hidden');
+      });
+
+      // Prevent closing when clicking inside dropdown
+      dropdownMenu.addEventListener('click', e => {
+        e.stopPropagation();
+      });
+    }
+  });
+</script>

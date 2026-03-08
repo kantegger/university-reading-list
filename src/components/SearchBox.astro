@@ -1,0 +1,351 @@
+---
+// SearchBox.astro - 客户端搜索组件
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<div class="search-container max-w-2xl mx-auto">
+  <div class="relative">
+    <input
+      type="text"
+      id="search-input"
+      placeholder={t('search.placeholder')}
+      class="w-full p-4 pl-12 pr-4 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+      aria-label={t('search.placeholder')}
+      aria-describedby="search-results"
+      autocomplete="off"
+    />
+    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+      <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 搜索结果容器 -->
+  <div
+    id="search-results"
+    class="hidden mt-4 bg-white rounded-lg shadow-lg border max-h-96 overflow-y-auto"
+    role="region"
+    aria-live="polite"
+    aria-label={t('search.results')}
+  >
+    <div id="search-loading" class="hidden p-4 text-center text-gray-500">
+      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+      <span class="search-loading-text">{t('ui.loading')}</span>
+    </div>
+    <div id="search-content"></div>
+    <div id="search-empty" class="hidden p-4 text-center text-gray-500">
+      <div class="text-gray-400 mb-2">
+        <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.485 0-4.735.887-6.5 2.364m11 0A7.962 7.962 0 0012 15"
+          ></path>
+        </svg>
+      </div>
+      <span class="search-no-results-text">{t('ui.no.books.try.other')}</span>
+    </div>
+    <div id="search-error" class="hidden p-4 text-center text-red-500">
+      <div class="text-red-400 mb-2">
+        <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L5.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+          ></path>
+        </svg>
+      </div>
+      <span class="search-error-text">{t('ui.service.error')}</span>
+      <button id="retry-search" class="ml-2 text-sm underline hover:text-red-700 retry-button"
+        >{t('ui.retry')}</button
+      >
+    </div>
+  </div>
+
+  <!-- 热门搜索建议 -->
+  <div class="mt-4">
+    <p class="text-sm text-gray-600 mb-2 popular-search-label">{t('search.popular')}:</p>
+    <div class="flex flex-wrap gap-2">
+      <button
+        class="search-suggestion px-4 py-3 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors min-h-[44px] sm:min-h-[32px] flex items-center justify-center"
+        data-query={t('search.popular.economics')}
+        aria-label={`${t('ui.search.for')} ${t('search.popular.economics')}`}
+      >
+        {t('search.popular.economics')}
+      </button>
+      <button
+        class="search-suggestion px-4 py-3 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors min-h-[44px] sm:min-h-[32px] flex items-center justify-center"
+        data-query={t('search.popular.law')}
+        aria-label={`${t('ui.search.for')} ${t('search.popular.law')}`}
+      >
+        {t('search.popular.law')}
+      </button>
+      <button
+        class="search-suggestion px-4 py-3 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors min-h-[44px] sm:min-h-[32px] flex items-center justify-center"
+        data-query={t('search.popular.math')}
+        aria-label={`${t('ui.search.for')} ${t('search.popular.math')}`}
+      >
+        {t('search.popular.math')}
+      </button>
+      <button
+        class="search-suggestion px-4 py-3 sm:px-3 sm:py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors min-h-[44px] sm:min-h-[32px] flex items-center justify-center"
+        data-query={t('search.popular.politics')}
+        aria-label={`${t('ui.search.for')} ${t('search.popular.politics')}`}
+      >
+        {t('search.popular.politics')}
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 客户端搜索逻辑
+  let searchData: any[] = [];
+  let fuse: any = null;
+
+  // 获取当前语言
+  const currentLang = window.location.pathname.split('/')[1] || 'en';
+
+  // 动态导入 Fuse.js
+  async function initializeSearch() {
+    try {
+      const [fuseModule, searchResponse] = await Promise.all([
+        import('fuse.js'),
+        fetch('/api/search.json'),
+      ]);
+
+      const Fuse = fuseModule.default;
+      const allSearchData = await searchResponse.json();
+
+      // 只保留当前语言的书籍数据
+      searchData = allSearchData.filter(book => book.lang === currentLang);
+
+      fuse = new Fuse(searchData, {
+        keys: ['title', 'author', 'category', 'tags', 'description'],
+        threshold: 0.3,
+        includeScore: true,
+        includeMatches: true,
+      });
+    } catch (error) {
+      console.error(t('ui.search.init.failed'), error);
+      // 显示错误提示给用户
+      showSearchError();
+    }
+  }
+
+  // 显示搜索结果
+  function displayResults(results: any[]) {
+    const searchResults = document.getElementById('search-results');
+    const searchContent = document.getElementById('search-content');
+    const searchEmpty = document.getElementById('search-empty');
+    const searchLoading = document.getElementById('search-loading');
+
+    if (!searchResults || !searchContent || !searchEmpty || !searchLoading) return;
+
+    searchLoading.classList.add('hidden');
+
+    if (results.length === 0) {
+      searchContent.innerHTML = '';
+      searchEmpty.classList.remove('hidden');
+    } else {
+      searchEmpty.classList.add('hidden');
+      searchContent.innerHTML = results
+        .map(result => {
+          const item = result.item;
+
+          return `
+          <div class="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <div class="flex items-start space-x-3">
+              ${
+                item.cover
+                  ? `<img src="${item.cover}" alt="${item.title}" class="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0" />`
+                  : `<div class="w-12 h-16 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                  <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                  </svg>
+                </div>`
+              }
+              <div class="flex-1 min-w-0">
+                <h4 class="text-lg font-medium text-gray-900 mb-1">
+                  <a href="/${currentLang}/subjects/${item.category}/${item.slug.split('/').slice(1).join('/') || item.slug.split('/').pop()}" class="hover:text-blue-600 transition-colors">
+                    ${item.title}
+                  </a>
+                </h4>
+                <p class="text-sm text-gray-600 mb-1">${window.translations?.ui?.author || t('ui.author')}: ${item.author}</p>
+
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    ${window.translations?.subject?.[item.category] || item.category}
+                  </span>
+                  ${
+                    item.rating
+                      ? `
+                    <div class="flex items-center">
+                      <span class="text-yellow-400">★</span>
+                      <span class="ml-1 text-sm text-gray-600">${item.rating}</span>
+                    </div>
+                  `
+                      : ''
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        })
+        .join('');
+    }
+
+    searchResults.classList.remove('hidden');
+  }
+
+  // 隐藏搜索结果
+  function hideResults() {
+    const searchResults = document.getElementById('search-results');
+    if (searchResults) {
+      searchResults.classList.add('hidden');
+    }
+  }
+
+  // 显示搜索错误
+  function showSearchError() {
+    const searchResults = document.getElementById('search-results');
+    const searchError = document.getElementById('search-error');
+    const searchContent = document.getElementById('search-content');
+    const searchLoading = document.getElementById('search-loading');
+    const searchEmpty = document.getElementById('search-empty');
+
+    if (searchResults && searchError) {
+      // 隐藏其他元素
+      searchContent?.classList.add('hidden');
+      searchLoading?.classList.add('hidden');
+      searchEmpty?.classList.add('hidden');
+
+      // 显示错误
+      searchError.classList.remove('hidden');
+      searchResults.classList.remove('hidden');
+    }
+  }
+
+  // 执行搜索
+  function performSearch(query: string) {
+    if (!fuse || query.length < 2) {
+      hideResults();
+      return;
+    }
+
+    const searchLoading = document.getElementById('search-loading');
+    const searchResults = document.getElementById('search-results');
+    const searchError = document.getElementById('search-error');
+
+    if (searchLoading && searchResults) {
+      searchResults.classList.remove('hidden');
+      searchLoading.classList.remove('hidden');
+      searchError?.classList.add('hidden');
+    }
+
+    // 模拟搜索延迟
+    setTimeout(() => {
+      try {
+        const searchResults = fuse.search(query);
+
+        // 根据 original_title 去重
+        const seen = new Set();
+        const uniqueResults = searchResults
+          .filter(result => {
+            const originalTitle = result.item.original_title || result.item.title;
+            if (seen.has(originalTitle)) {
+              return false;
+            }
+            seen.add(originalTitle);
+            return true;
+          })
+          .slice(0, 8);
+
+        displayResults(uniqueResults);
+      } catch (error) {
+        console.error(
+          window.translations?.ui?.search?.exec?.failed || t('ui.search.exec.failed'),
+          error
+        );
+        showSearchError();
+      }
+    }, 200);
+  }
+
+  // 初始化事件监听器
+  document.addEventListener('DOMContentLoaded', async () => {
+    await initializeSearch();
+
+    const searchInput = document.getElementById('search-input') as HTMLInputElement;
+    const searchSuggestions = document.querySelectorAll('.search-suggestion');
+
+    if (searchInput) {
+      let searchTimeout: NodeJS.Timeout;
+
+      searchInput.addEventListener('input', e => {
+        const query = (e.target as HTMLInputElement).value.trim();
+
+        // 防抖处理
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performSearch(query);
+        }, 300);
+      });
+
+      searchInput.addEventListener('focus', () => {
+        const query = searchInput.value.trim();
+        if (query.length >= 2) {
+          performSearch(query);
+        }
+      });
+    }
+
+    // 热门搜索建议点击事件
+    searchSuggestions.forEach(suggestion => {
+      suggestion.addEventListener('click', () => {
+        const query = suggestion.getAttribute('data-query');
+        if (query && searchInput) {
+          searchInput.value = query;
+          performSearch(query);
+          searchInput.focus();
+        }
+      });
+    });
+
+    // 重试搜索按钮
+    const retryButton = document.getElementById('retry-search');
+    if (retryButton) {
+      retryButton.addEventListener('click', () => {
+        location.reload();
+      });
+    }
+
+    // 点击外部隐藏搜索结果
+    document.addEventListener('click', e => {
+      const searchContainer = document.querySelector('.search-container');
+      if (searchContainer && !searchContainer.contains(e.target as Node)) {
+        hideResults();
+      }
+    });
+  });
+</script>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

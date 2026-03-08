@@ -1,0 +1,13 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://unireadinglist.com/sitemap-index.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
+
+# Disallow admin or sensitive paths (if any exist in future)
+# Disallow: /admin/
+# Disallow: /api/private/

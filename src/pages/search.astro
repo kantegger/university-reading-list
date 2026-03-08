@@ -1,0 +1,445 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBox from '../components/SearchBox.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+// 获取URL参数中的搜索查询
+const url = Astro.url;
+const searchQuery = url.searchParams.get('q') || '';
+---
+
+<BaseLayout 
+  title={searchQuery ? t('ui.search.results.for').replace('{query}', searchQuery) : t('ui.search.books')} 
+  description={t('ui.search.database.desc')}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 面包屑导航 -->
+    <nav class="flex mb-8" aria-label={t('ui.breadcrumb')}>
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="/" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2 transition-colors">
+            {t('ui.home')}
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{t('ui.search.for')}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- 页面标题 -->
+    <div class="text-center mb-12">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">
+        {searchQuery ? t('ui.search.results.for').replace('{query}', searchQuery) : t('ui.search.books')}
+      </h1>
+      <p class="text-lg text-gray-600 mb-8">
+        {t('ui.search.database.desc')}
+      </p>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="mb-12">
+      <SearchBox />
+    </div>
+
+    <!-- 顶部广告 -->
+    <div class="mb-12">
+
+    </div>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <!-- 主搜索结果区域 -->
+      <div class="lg:col-span-8">
+        <!-- 搜索结果容器 -->
+        <div id="main-search-results">
+          {searchQuery ? (
+            <div class="text-center py-12">
+              <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p class="text-gray-600">{t('ui.loading')}</p>
+            </div>
+          ) : (
+            <div class="text-center py-16">
+              <svg class="mx-auto h-24 w-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <h3 class="text-xl font-medium text-gray-900 mb-2">{t('ui.start.search')}</h3>
+              <p class="text-gray-600 mb-6">{t('ui.enter.keywords')}</p>
+              
+              <!-- 搜索建议 -->
+              <div class="max-w-md mx-auto">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">{t('search.popular')}:</h4>
+                <div class="flex flex-wrap justify-center gap-2">
+                  <button class="search-suggestion px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-full text-sm transition-colors" data-query={t('search.popular.economics')}>
+                    {t('search.popular.economics')}
+                  </button>
+                  <button class="search-suggestion px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded-full text-sm transition-colors" data-query={t('search.popular.law')}>
+                    {t('search.popular.law')}
+                  </button>
+                  <button class="search-suggestion px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-full text-sm transition-colors" data-query={t('search.popular.math')}>
+                    {t('search.popular.math')}
+                  </button>
+                  <button class="search-suggestion px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full text-sm transition-colors" data-query={t('search.popular.politics.intro')}>
+                    {t('search.popular.politics.intro')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <!-- 搜索过滤器 -->
+        <div id="search-filters" class="hidden mb-6">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-medium text-gray-900 mb-3">{t('ui.filter.conditions')}</h3>
+            <div class="flex flex-wrap gap-4">
+              <!-- 学科筛选 -->
+              <div>
+                <label class="text-xs font-medium text-gray-700 mb-1 block">{t('ui.subject')}</label>
+                <select id="category-filter" class="text-sm border border-gray-300 rounded px-2 py-1">
+                  <option value="">{t('ui.all.subjects')}</option>
+                  <option value="economics">经济学</option>
+                  <option value="law">法学</option>
+                  <option value="mathematics">数学</option>
+                  <option value="political-science">政治学</option>
+                  <option value="sociology">社会学</option>
+                  <option value="philosophy">哲学</option>
+                </select>
+              </div>
+              
+              <!-- 难度筛选 -->
+              <div>
+                <label class="text-xs font-medium text-gray-700 mb-1 block">{t('ui.difficulty')}</label>
+                <select id="difficulty-filter" class="text-sm border border-gray-300 rounded px-2 py-1">
+                  <option value="">{t('ui.all.difficulties')}</option>
+                  <option value="beginner">入门</option>
+                  <option value="intermediate">中级</option>
+                  <option value="advanced">高级</option>
+                </select>
+              </div>
+              
+              <!-- 排序 -->
+              <div>
+                <label class="text-xs font-medium text-gray-700 mb-1 block">{t('ui.sort')}</label>
+                <select id="sort-filter" class="text-sm border border-gray-300 rounded px-2 py-1">
+                  <option value="relevance">{t('ui.relevance')}</option>
+                  <option value="rating">{t('ui.rating')}</option>
+                  <option value="title">{t('ui.title')}</option>
+                  <option value="author">{t('ui.author')}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 侧边栏 -->
+      <div class="mt-12 lg:mt-0 lg:col-span-4">
+        <div class="sticky top-8 space-y-8">
+          <!-- 侧边栏广告 -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+
+          </div>
+
+          <!-- 搜索统计 -->
+          <div id="search-stats" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">{t('ui.search.statistics')}</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">{t('ui.results.found')}:</span>
+                <span id="results-count" class="font-medium">0</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">{t('ui.search.time')}:</span>
+                <span id="search-time" class="font-medium">0ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 相关推荐 -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">{t('ui.browse.recommendations')}</h3>
+            <div class="space-y-3">
+              <a href="/subjects/economics" class="block text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                📊 经济学必读书单
+              </a>
+              <a href="/subjects/law" class="block text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                ⚖️ 法学核心教材
+              </a>
+              <a href="/subjects/mathematics" class="block text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                🔢 数学经典著作
+              </a>
+              <a href="/subjects/political-science" class="block text-sm text-blue-600 hover:text-blue-800 transition-colors">
+                🏛️ 政治学入门指南
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部广告 -->
+  <div class="bg-white border-t border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // 标签翻译映射 (简体中文)
+  const tagTranslations: Record<string, string> = {
+    'analysis': '分析',
+    'theory': '理论',
+    'practice': '实践',
+    'research': '研究',
+    'introduction': '入门',
+    'advanced': '高级',
+    'methodology': '方法论',
+    'statistics': '统计学',
+    'economics': '经济学',
+    'finance': '金融',
+    'law': '法学',
+    'computing': '计算',
+    'algorithms': '算法',
+    'programming': '编程',
+    'data': '数据',
+    'mathematics': '数学',
+    'calculus': '微积分',
+    'algebra': '代数',
+    'probability': '概率',
+    'stochastic': '随机',
+    'optimization': '优化',
+    'linear': '线性',
+    'dynamic': '动态',
+    'differential': '微分',
+    'abstract': '抽象',
+    'real': '实数',
+    'complex': '复数',
+    'numerical': '数值',
+    'statistical': '统计',
+    'modeling': '建模',
+    'ethics': '伦理学',
+    'philosophy': '哲学',
+    'politics': '政治',
+    'environment': '环境',
+    'social': '社会',
+    'cultural': '文化',
+    'historical': '历史',
+    'biography': '传记',
+    'textbook': '教科书',
+    'reference': '参考书',
+    'undergraduate': '本科',
+    'graduate': '研究生',
+    'beginner': '初级',
+    'intermediate': '中级'
+  };
+  
+  // 客户端标签翻译函数
+  function translateTagClient(tag: string): string {
+    return tagTranslations[tag.toLowerCase()] || tag;
+  }
+
+  // 页面加载时执行搜索
+  document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+    
+    if (query) {
+      // 如果URL中有搜索查询，执行搜索
+      performPageSearch(query);
+    }
+    
+    // 绑定搜索建议点击事件
+    const suggestions = document.querySelectorAll('.search-suggestion');
+    suggestions.forEach(suggestion => {
+      suggestion.addEventListener('click', () => {
+        const query = suggestion.getAttribute('data-query');
+        if (query) {
+          // 更新URL并执行搜索
+          const newUrl = new URL(window.location);
+          newUrl.searchParams.set('q', query);
+          window.history.pushState({}, '', newUrl);
+          
+          // 更新搜索框
+          const searchInput = document.getElementById('search-input') as HTMLInputElement;
+          if (searchInput) {
+            searchInput.value = query;
+          }
+          
+          performPageSearch(query);
+        }
+      });
+    });
+  });
+
+  // 执行页面级搜索
+  async function performPageSearch(query: string) {
+    const startTime = performance.now();
+    const resultsContainer = document.getElementById('main-search-results');
+    const searchStats = document.getElementById('search-stats');
+    const searchFilters = document.getElementById('search-filters');
+    
+    if (!resultsContainer) return;
+
+    try {
+      // 显示加载状态
+      resultsContainer.innerHTML = `
+        <div class="text-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">${window.translations?.ui?.loading || 'Loading...'}</p>
+        </div>
+      `;
+
+      // 获取搜索数据
+      const response = await fetch('/api/search.json');
+      const searchData = await response.json();
+
+      // 动态导入 Fuse.js
+      const { default: Fuse } = await import('fuse.js');
+      
+      const fuse = new Fuse(searchData, {
+        keys: [
+          { name: 'title', weight: 1.0 },
+          { name: 'original_title', weight: 1.0 },
+          { name: 'author', weight: 0.8 },
+          { name: 'category', weight: 0.6 },
+          { name: 'tags', weight: 0.5 },
+          { name: 'description', weight: 0.3 }
+        ],
+        threshold: 0.3,
+        includeScore: true,
+        includeMatches: true
+      });
+
+      const results = fuse.search(query);
+      const endTime = performance.now();
+      const searchTime = Math.round(endTime - startTime);
+
+      // 显示搜索统计
+      if (searchStats) {
+        searchStats.classList.remove('hidden');
+        const resultsCount = document.getElementById('results-count');
+        const searchTimeEl = document.getElementById('search-time');
+        if (resultsCount) resultsCount.textContent = results.length.toString();
+        if (searchTimeEl) searchTimeEl.textContent = `${searchTime}ms`;
+      }
+
+      // 显示筛选器
+      if (searchFilters && results.length > 0) {
+        searchFilters.classList.remove('hidden');
+      }
+
+      // 显示搜索结果
+      displayPageResults(results);
+
+    } catch (error) {
+      resultsContainer.innerHTML = `
+        <div class="text-center py-12">
+          <p class="text-red-600">${window.translations?.ui?.search?.failed || 'Search failed, please try again later'}</p>
+        </div>
+      `;
+    }
+  }
+
+  // 显示搜索结果
+  function displayPageResults(results: any[]) {
+    const resultsContainer = document.getElementById('main-search-results');
+    if (!resultsContainer) return;
+
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="text-center py-16">
+          <svg class="mx-auto h-24 w-24 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.291-1.1-5.291-2.709M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <h3 class="text-xl font-medium text-gray-900 mb-2">${window.translations?.ui?.no?.results?.found || 'No relevant results found'}</h3>
+          <p class="text-gray-600 mb-6">${window.translations?.ui?.try?.different?.keywords || 'Try using different keywords or browse by subject category'}</p>
+          <a href="/subjects" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            ${window.translations?.ui?.browse?.subject?.categories || 'Browse subject categories'}
+          </a>
+        </div>
+      `;
+      return;
+    }
+
+    const categoryNames: Record<string, string> = {
+      economics: '经济学',
+      law: '法学',
+      mathematics: '数学',
+      'political-science': '政治学',
+      sociology: '社会学',
+      philosophy: '哲学'
+    };
+
+    resultsContainer.innerHTML = `
+      <div class="space-y-6">
+        ${results.map(result => {
+          const item = result.item;
+          return `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div class="flex items-start space-x-4">
+                ${item.cover ? 
+                  `<img src="${item.cover}" alt="${item.title}" class="w-16 h-24 object-cover rounded shadow-sm flex-shrink-0" />` :
+                  `<div class="w-16 h-24 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                    <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                  </div>`
+                }
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                    <a href="/subjects/${item.category}/${item.slug.split('/').slice(1).join('/') || item.slug.split('/').pop()}" class="hover:text-blue-600 transition-colors">
+                      ${item.title}
+                    </a>
+                  </h3>
+                  <p class="text-gray-600 mb-2">${window.translations?.ui?.author || 'Author'}: ${item.author}</p>
+
+                  <div class="flex items-center gap-3 mb-3">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      ${categoryNames[item.category] || item.category}
+                    </span>
+                    ${item.rating ? `
+                      <div class="flex items-center">
+                        <span class="text-yellow-400">★</span>
+                        <span class="ml-1 text-sm text-gray-600">${item.rating}</span>
+                      </div>
+                    ` : ''}
+                    ${item.price ? `<span class="text-sm text-gray-600">${item.price}</span>` : ''}
+                  </div>
+                  ${item.tags && item.tags.length > 0 ? `
+                    <div class="flex flex-wrap gap-1">
+                      ${item.tags.slice(0, 4).map((tag: string) => `
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
+                          ${translateTagClient(tag)}
+                        </span>
+                      `).join('')}
+                      ${item.tags.length > 4 ? `<span class="text-xs text-gray-500">+${item.tags.length - 4}</span>` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+</script>
+
+<style>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

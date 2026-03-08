@@ -1,0 +1,7 @@
+# Root redirect to default language is handled by middleware
+
+# Redirect old paths if needed
+# /old-path/* /new-path/:splat 301
+
+# Fallback for SPA routing (not needed for Astro static sites)
+# /* /index.html 200

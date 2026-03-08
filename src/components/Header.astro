@@ -1,0 +1,99 @@
+---
+import LanguageSelector from './LanguageSelector.astro';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+
+const currentLang = getLangFromUrl(Astro.url);
+const t = useTranslations(currentLang);
+---
+
+<!-- Header -->
+<header class="bg-white shadow-sm border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex items-center">
+        <a href="/" class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xl font-bold text-gray-900">
+              <span class="hidden sm:inline">{t('site.title')}</span>
+              <span class="sm:hidden">Uni Reading List</span>
+            </span>
+            <span class="hidden sm:block text-xs text-gray-500">{t('site.subtitle')}</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Center Navigation (Desktop only) -->
+      <nav class="hidden lg:flex items-center space-x-8">
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/`} class="text-gray-700 hover:text-blue-600 transition-colors">{t('nav.home')}</a>
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/subjects`} class="text-gray-700 hover:text-blue-600 transition-colors">{t('nav.all')}</a>
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/about`} class="text-gray-700 hover:text-blue-600 transition-colors">{t('nav.about')}</a>
+      </nav>
+      
+      <!-- Right Side: Search + Language + Mobile Menu -->
+      <div class="flex items-center space-x-4">
+        <!-- Search Section -->
+        <div class="flex items-center">
+          <!-- Desktop Search Bar -->
+          <button 
+            id="search-trigger-btn"
+            class="hidden md:flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors min-w-[200px] text-left"
+            aria-label={t('nav.search')}
+          >
+            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span class="text-sm text-gray-500">{t('nav.search')}...</span>
+            <span class="ml-auto text-xs text-gray-400">⌘K</span>
+          </button>
+
+          <!-- Mobile Search Icon -->
+          <button 
+            id="search-trigger-btn-mobile"
+            class="md:hidden p-3 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label={t('nav.search')}
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Language Selector (Desktop) -->
+        <div class="hidden md:block">
+          <LanguageSelector />
+        </div>
+        
+        <!-- Language Selector (Mobile - Globe Icon) -->
+        <div class="md:hidden">
+          <LanguageSelector mobile={true} />
+        </div>
+        
+        <!-- Mobile Menu Button -->
+        <button 
+          id="mobile-menu-button"
+          class="lg:hidden p-3 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="打开菜单"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden lg:hidden pb-4 relative">
+      <div class="absolute right-0 top-0 bg-white shadow-lg rounded-lg border border-gray-200 min-w-[160px] py-2 z-10">
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/`} class="block px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors">{t('nav.home')}</a>
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/subjects`} class="block px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors">{t('nav.all')}</a>
+        <a href={`/${currentLang === 'zh-cn' ? 'zh-cn' : currentLang === 'zh-tw' ? 'zh-tw' : currentLang === 'ja' ? 'ja' : 'en'}/about`} class="block px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors">{t('nav.about')}</a>
+      </div>
+    </div>
+  </div>
+</header>

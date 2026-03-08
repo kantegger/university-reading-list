@@ -1,0 +1,508 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BookCard from '../components/BookCard.astro';
+import { useTranslations, getSubjectTranslationKey } from '../i18n/utils';
+import { getContentBySubject, subjects as availableSubjects } from '../lib/content-utils';
+
+const t = useTranslations('en');
+
+// Get subject data with counts only
+const subjectDataPromises = availableSubjects.map(async subject => {
+  const books = await getContentBySubject('en', subject);
+  return {
+    id: subject,
+    books,
+    count: books.length,
+  };
+});
+
+const subjectData = await Promise.all(subjectDataPromises);
+const booksBySubject = subjectData.reduce(
+  (acc, { id, books }) => {
+    acc[id] = books;
+    return acc;
+  },
+  {} as Record<string, any[]>
+);
+
+// Calculate total books
+const totalBooks = subjectData.reduce((total, { count }) => total + count, 0);
+
+// Subject configuration
+const subjects = [
+  { id: 'economics', icon: '📊' },
+  { id: 'law', icon: '⚖️' },
+  { id: 'mathematics', icon: '🔢' },
+  { id: 'physics', icon: '⚛️' },
+  { id: 'chemistry', icon: '🧪' },
+  { id: 'biology', icon: '🧬' },
+  { id: 'computer-science', icon: '💻' },
+  { id: 'psychology', icon: '🧠' },
+  { id: 'sociology', icon: '👥' },
+  { id: 'philosophy', icon: '💭' },
+  { id: 'history', icon: '📜' },
+  { id: 'literature', icon: '📚' },
+  { id: 'linguistics', icon: '🗣️' },
+  { id: 'political-science', icon: '🏛️' },
+  { id: 'geography', icon: '🌍' },
+  { id: 'anthropology', icon: '🏺' },
+  { id: 'education', icon: '🎓' },
+  { id: 'medicine', icon: '⚕️' },
+  { id: 'biomedical-engineering', icon: '🔬' },
+  { id: 'engineering', icon: '⚙️' },
+  { id: 'business', icon: '💼' },
+];
+
+// Add book count and translated name to each subject
+let subjectsWithCount = subjects.map(subject => ({
+  ...subject,
+  name: t(getSubjectTranslationKey(subject.id)),
+  count: booksBySubject[subject.id]?.length || 0,
+  books: booksBySubject[subject.id] || [],
+}));
+
+// Get URL parameter for selected subject (for server-side rendering)
+const urlParams = Astro.url.searchParams;
+const preSelectedSubject = urlParams.get('subject');
+
+// If a subject is pre-selected, move it to the front for mobile display
+if (preSelectedSubject) {
+  const selectedIndex = subjectsWithCount.findIndex(s => s.id === preSelectedSubject);
+  if (selectedIndex > 0) {
+    const selectedSubject = subjectsWithCount[selectedIndex];
+    subjectsWithCount = [
+      selectedSubject,
+      ...subjectsWithCount.slice(0, selectedIndex),
+      ...subjectsWithCount.slice(selectedIndex + 1),
+    ];
+  }
+}
+
+// For static generation, we'll handle URL parameters client-side
+// Default to showing all subjects initially
+const selectedSubject = preSelectedSubject || 'economics'; // This will be updated client-side
+const currentSubject = subjectsWithCount[0]; // Default to first subject
+---
+
+<BaseLayout title={`${t('nav.all')} - ${t('site.title')}`} description={t('subjects.description')}>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Page Title -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center">
+          <h1 class="text-3xl font-bold text-gray-900 mb-4">{t('nav.all')}</h1>
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+            {t('subjects.description')}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+        <!-- Mobile/Tablet Subject Grid Navigation (visible on smaller screens) -->
+        <div class="lg:hidden mb-8">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">{t('subjects.classification')}</h2>
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+              id="mobile-subject-nav"
+            >
+              {
+                subjectsWithCount.map((subject, index) => (
+                  <a
+                    href={`/subjects?subject=${subject.id}`}
+                    class={`mobile-subject-link flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 bg-white ${index >= 4 ? 'mobile-subject-item-hidden' : ''}`}
+                    data-subject={subject.id}
+                    data-index={index}
+                  >
+                    <span class="text-xl mr-3 flex-shrink-0">{subject.icon}</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-xs font-medium text-gray-900 truncate">{subject.name}</div>
+                    </div>
+                    <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full ml-2">
+                      {subject.count}
+                    </div>
+                  </a>
+                ))
+              }
+            </div>
+
+            <!-- Show More/Less Button (only visible when there are more than 4 subjects) -->
+            {
+              subjectsWithCount.length > 4 && (
+                <div class="text-center mt-4">
+                  <button
+                    id="mobile-subjects-toggle"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    data-expanded="false"
+                  >
+                    <span class="toggle-text">Show More</span>
+                    <svg
+                      class="ml-2 w-4 h-4 transition-transform duration-200 toggle-icon"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )
+            }
+          </div>
+        </div>
+
+        <!-- Desktop Left Subject Tree Navigation (hidden on smaller screens) -->
+        <div class="hidden lg:block lg:col-span-3">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-8">
+            <div class="p-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">{t('subjects.classification')}</h2>
+              <p class="text-sm text-gray-500 mt-1">
+                {t('subjects.total.books', { count: totalBooks })}
+              </p>
+            </div>
+
+            <!-- Subject List -->
+            <nav class="p-2" id="desktop-subject-nav">
+              {
+                subjectsWithCount.map(subject => (
+                  <a
+                    href={`/subjects?subject=${subject.id}`}
+                    class="desktop-subject-link flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    data-subject={subject.id}
+                  >
+                    <div class="flex items-center space-x-3">
+                      <span class="text-lg">{subject.icon}</span>
+                      <span class="font-medium">{subject.name}</span>
+                    </div>
+                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {subject.count}
+                    </span>
+                  </a>
+                ))
+              }
+            </nav>
+          </div>
+        </div>
+
+        <!-- Right Detail Content -->
+        <div class="lg:col-span-9">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <!-- Subject Title -->
+            <div class="p-6 border-b border-gray-200" id="subject-title">
+              <div class="flex items-center space-x-3">
+                <span class="text-3xl" id="subject-icon">📊</span>
+                <div>
+                  <h2 class="text-2xl font-bold text-gray-900" id="subject-name">Economics</h2>
+                  <p class="text-gray-600 mt-1" id="subject-count">Loading...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Books Grid -->
+            <div class="p-6" id="books-container">
+              <!-- This will be populated by JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script
+  is:inline
+  define:vars={{
+    subjectsData: subjectsWithCount,
+    translations: {
+      selectedBooks: 'books selected',
+      noBooks: 'No books available',
+      noBooksDesc: 'Check back later for more content',
+    },
+  }}
+>
+  // Immediately hide subjects > 4 on load
+  function initialHideSubjects() {
+    const allLinks = document.querySelectorAll('.mobile-subject-link[data-index]');
+    allLinks.forEach((link, index) => {
+      const dataIndex = parseInt(link.getAttribute('data-index'));
+      if (dataIndex >= 4) {
+        link.classList.add('mobile-subject-item-hidden');
+        // Force inline style as backup
+        link.style.display = 'none';
+      }
+    });
+  }
+
+  // Client-side subject filtering for static generation
+  document.addEventListener('DOMContentLoaded', function () {
+    // Immediately hide excess subjects
+    initialHideSubjects();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedSubject = urlParams.get('subject') || 'economics';
+
+    // Handle mobile subjects toggle
+    initMobileSubjectsToggle();
+
+    // Re-arrange subjects if needed (client-side for static generation)
+    rearrangeSubjectsForMobile(selectedSubject);
+
+    // Update the current subject display
+    updateSubjectDisplay(selectedSubject);
+
+    // Add click handlers for subject navigation (both mobile and desktop)
+    document.querySelectorAll('.mobile-subject-link, .desktop-subject-link').forEach(link => {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        const subjectId = this.getAttribute('data-subject');
+
+        // Update URL without page reload
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('subject', subjectId);
+        history.pushState(null, '', newUrl.toString());
+
+        // Update display
+        updateSubjectDisplay(subjectId);
+      });
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedSubject = urlParams.get('subject') || 'economics';
+      updateSubjectDisplay(selectedSubject);
+    });
+  });
+
+  function updateSubjectDisplay(subjectId) {
+    // Find the selected subject data
+    const selectedSubjectData = subjectsData.find(s => s.id === subjectId) || subjectsData[0];
+
+    // Update navigation active state for desktop
+    document.querySelectorAll('.desktop-subject-link').forEach(link => {
+      if (link.getAttribute('data-subject') === subjectId) {
+        link.className =
+          'desktop-subject-link flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors bg-blue-50 text-blue-700 border-l-4 border-blue-500';
+      } else {
+        link.className =
+          'desktop-subject-link flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors text-gray-700 hover:bg-gray-50 hover:text-gray-900';
+      }
+    });
+
+    // Update navigation active state for mobile
+    document.querySelectorAll('.mobile-subject-link').forEach(link => {
+      if (link.getAttribute('data-subject') === subjectId) {
+        link.className =
+          'mobile-subject-link flex items-center p-3 rounded-lg border-2 border-blue-500 bg-blue-50';
+      } else {
+        link.className =
+          'mobile-subject-link flex items-center p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200 bg-white';
+      }
+    });
+
+    // Update subject title
+    document.getElementById('subject-icon').textContent = selectedSubjectData.icon;
+    document.getElementById('subject-name').textContent = selectedSubjectData.name;
+    document.getElementById('subject-count').textContent = translations.selectedBooks.replace(
+      '{count}',
+      selectedSubjectData.count
+    );
+
+    // Update books grid
+    const booksContainer = document.getElementById('books-container');
+    if (selectedSubjectData.books && selectedSubjectData.books.length > 0) {
+      const booksHtml = selectedSubjectData.books
+        .map(
+          (book, index) => `
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+          <div class="p-6">
+            <div class="flex items-start space-x-4">
+              <div class="flex-shrink-0">
+                <a href="/subjects/${book.data.category}/${book.slug.split('/').slice(1).join('/') || book.slug.split('/').pop()}" class="block group">
+                  ${
+                    book.data.cover
+                      ? `<img src="${book.data.cover}" alt="${book.data.title} Cover" class="w-16 h-24 object-cover rounded shadow-sm transition-all duration-300 group-hover:shadow-[0_10px_20px_0px_rgba(59,130,246,0.4)] group-hover:scale-105 group-hover:border-2 group-hover:border-blue-200 cursor-pointer" loading="${index < 6 ? 'eager' : 'lazy'}" decoding="${index < 6 ? 'sync' : 'async'}" fetchpriority="${index < 6 ? 'high' : 'low'}" sizes="64px" />`
+                      : `<div class="w-16 h-24 bg-gray-200 rounded flex items-center justify-center transition-all duration-300 group-hover:bg-gray-300 group-hover:shadow-[0_10px_20px_0px_rgba(59,130,246,0.4)] group-hover:scale-105 group-hover:border-2 group-hover:border-blue-200 cursor-pointer">
+                      <svg class="w-6 h-6 text-gray-400 group-hover:text-gray-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                      </svg>
+                    </div>`
+                  }
+                </a>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                  <a href="/subjects/${book.data.category}/${book.slug.split('/').slice(1).join('/') || book.slug.split('/').pop()}" class="hover:text-blue-600 transition-colors">
+                    ${book.data.title}
+                  </a>
+                </h3>
+                <p class="text-sm text-gray-600 mb-2">
+                  ${book.data.author || 'Unknown Author'}
+                </p>
+              </div>
+            </div>
+            ${
+              book.data.description
+                ? `
+              <div class="mt-3 pl-0">
+                <p class="text-sm text-gray-600 line-clamp-5">
+                  ${book.data.description}
+                </p>
+              </div>
+            `
+                : ''
+            }
+          </div>
+        </div>
+      `
+        )
+        .join('');
+
+      booksContainer.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-8">${booksHtml}</div>`;
+    } else {
+      booksContainer.innerHTML = `
+        <div class="text-center py-12">
+          <div class="text-6xl mb-4">📚</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">${translations.noBooks}</h3>
+          <p class="text-gray-500">${translations.noBooksDesc}</p>
+        </div>
+      `;
+    }
+  }
+
+  function getDifficultyColor(difficulty) {
+    switch (difficulty) {
+      case 'beginner':
+        return 'bg-green-100 text-green-800';
+      case 'intermediate':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'advanced':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  }
+
+  // Initialize mobile subjects toggle functionality
+  function initMobileSubjectsToggle() {
+    const toggleBtn = document.getElementById('mobile-subjects-toggle');
+    if (!toggleBtn) {
+      return;
+    }
+
+    toggleBtn.addEventListener('click', function () {
+      const isExpanded = this.getAttribute('data-expanded') === 'true';
+      const allItems = document.querySelectorAll('.mobile-subject-link[data-index]');
+      const toggleText = this.querySelector('.toggle-text');
+      const toggleIcon = this.querySelector('.toggle-icon');
+
+      if (isExpanded) {
+        // Collapse - hide items with index >= 4
+        let hiddenCount = 0;
+        allItems.forEach(item => {
+          const index = parseInt(item.getAttribute('data-index'));
+          if (index >= 4) {
+            item.classList.add('mobile-subject-item-hidden');
+            item.style.display = 'none'; // Also set inline style
+            hiddenCount++;
+          }
+        });
+        toggleText.textContent = 'Show More';
+        toggleIcon.style.transform = 'rotate(0deg)';
+        this.setAttribute('data-expanded', 'false');
+      } else {
+        // Expand - show all items
+        allItems.forEach(item => {
+          item.classList.remove('mobile-subject-item-hidden');
+          item.style.display = ''; // Remove inline style to show
+        });
+        toggleText.textContent = 'Show Less';
+        toggleIcon.style.transform = 'rotate(180deg)';
+        this.setAttribute('data-expanded', 'true');
+      }
+    });
+  }
+
+  // Re-arrange subjects for mobile display (move selected subject to front)
+  function rearrangeSubjectsForMobile(selectedSubjectId) {
+    const mobileNav = document.getElementById('mobile-subject-nav');
+    if (!mobileNav || !selectedSubjectId) return;
+
+    const links = Array.from(mobileNav.querySelectorAll('.mobile-subject-link'));
+    const selectedLink = links.find(
+      link => link.getAttribute('data-subject') === selectedSubjectId
+    );
+
+    if (selectedLink && links[0] !== selectedLink) {
+      // Move selected subject to the front
+      mobileNav.insertBefore(selectedLink, mobileNav.firstChild);
+
+      // Update data-index attributes and visibility
+      const allLinks = Array.from(mobileNav.querySelectorAll('.mobile-subject-link'));
+      allLinks.forEach((link, index) => {
+        link.setAttribute('data-index', index);
+        if (index >= 4) {
+          link.classList.add('mobile-subject-item-hidden');
+          link.style.display = 'none';
+        } else {
+          link.classList.remove('mobile-subject-item-hidden');
+          link.style.display = '';
+        }
+      });
+    }
+
+    // Also ensure initial hiding for static rendering
+    const allLinks = Array.from(mobileNav.querySelectorAll('.mobile-subject-link'));
+    allLinks.forEach((link, index) => {
+      if (index >= 4) {
+        link.classList.add('mobile-subject-item-hidden');
+        link.style.display = 'none';
+      }
+    });
+  }
+</script>
+
+<style>
+  .line-clamp-5 {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mobile-subject-item-hidden {
+    display: none !important;
+  }
+
+  /* Custom scrollbar for navigation */
+  nav {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+  }
+
+  nav::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  nav::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+  }
+
+  nav::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+  }
+
+  nav::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+</style>

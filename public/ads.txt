@@ -1,0 +1,18 @@
+# ads.txt - Authorized Digital Sellers
+# This file helps prevent unauthorized selling of your ad inventory
+# Format: <DOMAIN>, <PUBLISHER_ID>, <RELATIONSHIP>, <TAG_ID>
+
+# Google AdSense
+google.com, pub-2079107911432321, DIRECT, f08c47fec0942fa0
+
+# Add your actual ad network entries below
+# Each line should contain the ad system domain, your publisher ID,
+# the relationship (DIRECT or RESELLER), and optionally the TAG ID
+
+# Example entries (replace with your actual ad network information):
+# appnexus.com, 12345, DIRECT
+# openx.com, 540191398, RESELLER, 6a698e2ec38604c6
+# pubmatic.com, 157150, RESELLER, 5d62403b186f2ace
+# rubiconproject.com, 18020, RESELLER, 0bfd66d529a55807
+
+# Contact your ad network(s) to get the correct entries for your account

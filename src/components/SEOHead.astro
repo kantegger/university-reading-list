@@ -1,0 +1,102 @@
+---
+export interface Props {
+  title: string;
+  description: string;
+  image: string;
+  canonical: string;
+  noindex?: boolean;
+  siteTitle: string;
+}
+
+const { title, description, image, canonical, noindex = false, siteTitle } = Astro.props;
+
+const siteUrl = 'https://unireadinglist.com';
+const GA_ID = import.meta.env.GOOGLE_ANALYTICS_ID;
+---
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="generator" content={Astro.generator} />
+
+  <!-- SEO Meta Tags -->
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={new URL(image, siteUrl).toString()} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:site_name" content={siteTitle} />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@unireadinglist" />
+  <meta name="twitter:creator" content="@unireadinglist" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={new URL(image, siteUrl).toString()} />
+  <meta name="twitter:image:alt" content={title} />
+
+  <!-- Additional SEO Meta Tags -->
+  <meta name="author" content="University Reading List" />
+  <meta name="theme-color" content="#3B82F6" />
+  <meta name="msapplication-TileColor" content="#3B82F6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="format-detection" content="telephone=no" />
+  {
+    import.meta.env.GOOGLE_ADSENSE_CLIENT_ID && (
+      <meta name="google-adsense-account" content={import.meta.env.GOOGLE_ADSENSE_CLIENT_ID} />
+    )
+  }
+
+  <!-- Google AdSense -->
+  {
+    import.meta.env.GOOGLE_ADSENSE_CLIENT_ID && (
+      <script
+        is:inline
+        async
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${import.meta.env.GOOGLE_ADSENSE_CLIENT_ID}`}
+        crossorigin="anonymous"
+      />
+    )
+  }
+
+  <!-- Structured Data -->
+  <script type="application/ld+json" is:inline>
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "University Reading List",
+      "url": "https://unireadinglist.com",
+      "description": "大学生必读书单推荐平台",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://unireadinglist.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  </script>
+
+  <!-- Google Analytics - only initializes if GA_ID is configured -->
+  <script is:inline define:vars={{ GA_ID }}>
+    if (GA_ID) {
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag('js', new Date());
+      window.gtag('config', GA_ID);
+    }
+  </script>
+</head>

@@ -1,0 +1,259 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookCard from '../../components/BookCard.astro';
+import SubjectNav from '../../components/SubjectNav.astro';
+import { useTranslations } from '../../i18n/utils';
+import { getAllContentByLanguage } from '../../lib/content-utils';
+
+const t = useTranslations('zh-tw');
+
+// Get all book content for Traditional Chinese
+const allBooks = await getAllContentByLanguage('zh-tw');
+
+// Get hot books (sorted by rating and featured status, simulating click count)
+const hotBooks = allBooks.sort((a, b) => {
+  // Prioritize featured books, then sort by rating
+  if (a.data.featured && !b.data.featured) return -1;
+  if (!a.data.featured && b.data.featured) return 1;
+  return (b.data.rating || 0) - (a.data.rating || 0);
+});
+---
+
+<BaseLayout title={t('site.title')} description={t('site.description')}>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Subject Navigation and Hot Books Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Subject Navigation -->
+      <div class="mb-8">
+        <SubjectNav />
+      </div>
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">{t('home.hot.books')}</h2>
+
+        <!-- Books Grid -->
+        <div
+          id="books-grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          {
+            hotBooks
+              .slice(0, 12)
+              .map((book, index) => <BookCard book={book} priority={index < 4} />)
+          }
+        </div>
+
+        <!-- Load more button -->
+        <div id="load-more-container" class="text-center py-8">
+          <button
+            id="load-more-btn"
+            class="inline-flex items-center px-6 py-3 font-semibold text-sm rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+            </svg>
+            {t('home.load.more')}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script
+  define:vars={{
+    hotBooks: hotBooks.map(book => ({
+      slug: book.slug,
+      data: book.data,
+    })),
+  }}
+>
+  // Load more functionality
+  let currentPage = 1;
+  let loading = false;
+  let hasMore = true;
+  const booksPerPage = 12;
+
+  // 標籤翻譯映射 (繁體中文)
+  const tagTranslations = {
+    analysis: '分析',
+    theory: '理論',
+    practice: '實踐',
+    research: '研究',
+    introduction: '入門',
+    advanced: '高級',
+    methodology: '方法論',
+    statistics: '統計學',
+    economics: '經濟學',
+    finance: '金融',
+    law: '法學',
+    computing: '計算',
+    algorithms: '演算法',
+    programming: '程式設計',
+    data: '資料',
+    mathematics: '數學',
+    calculus: '微積分',
+    algebra: '代數',
+    probability: '機率',
+    stochastic: '隨機過程',
+    optimization: '最佳化',
+    linear: '線性',
+    dynamic: '動態',
+    differential: '微分',
+    abstract: '抽象',
+    real: '實數',
+    complex: '複數',
+    numerical: '數值',
+    statistical: '統計',
+    modeling: '建模',
+    ethics: '倫理學',
+    philosophy: '哲學',
+    politics: '政治',
+    environment: '環境',
+    social: '社會',
+    cultural: '文化',
+    historical: '歷史',
+    biography: '傳記',
+    textbook: '教科書',
+    reference: '參考書',
+    undergraduate: '大學',
+    graduate: '研究所',
+    beginner: '初級',
+    intermediate: '中級',
+  };
+
+  // 客戶端標籤翻譯函數
+  function translateTagClient(tag) {
+    return tagTranslations[tag.toLowerCase()] || tag;
+  }
+
+  function loadMoreBooks() {
+    if (loading || !hasMore) return;
+
+    loading = true;
+    document.getElementById('load-more-btn').disabled = true;
+    document.getElementById('load-more-btn').textContent = '載入中...';
+
+    setTimeout(() => {
+      const startIndex = currentPage * booksPerPage;
+      const endIndex = startIndex + booksPerPage;
+      const newBooks = hotBooks.slice(startIndex, endIndex);
+
+      if (newBooks.length === 0) {
+        hasMore = false;
+        document.getElementById('load-more-container').style.display = 'none';
+        return;
+      }
+
+      const booksGrid = document.getElementById('books-grid');
+
+      // Get category name using translations
+      function getCategoryName(category) {
+        return window.translations?.subject?.[category] || category;
+      }
+
+      // Get difficulty name using translations
+      function getDifficultyName(difficulty) {
+        return window.translations?.difficulty?.[difficulty] || difficulty;
+      }
+
+      const difficultyColors = {
+        beginner: 'bg-green-100 text-green-800',
+        intermediate: 'bg-yellow-100 text-yellow-800',
+        advanced: 'bg-red-100 text-red-800',
+      };
+
+      newBooks.forEach(book => {
+        const bookCard = document.createElement('div');
+        bookCard.innerHTML = `
+          <div class="flex flex-col h-full p-4">
+            <!-- 書籍封面 - 居中顯示，可點擊 -->
+            <div class="flex justify-center mb-4">
+              <a href="/zh-tw/subjects/${book.data.category}/${book.slug.split('/').slice(1).join('/') || book.slug.split('/').pop()}" class="block w-32 h-48 group">
+                ${
+                  book.data.cover
+                    ? `<img src="${book.data.cover}" alt="${book.data.title} 封面" class="w-full h-full object-cover rounded shadow-sm transition-all duration-300 group-hover:shadow-[0_10px_20px_0px_rgba(59,130,246,0.4)] group-hover:scale-105 group-hover:border-2 group-hover:border-blue-200 cursor-pointer" loading="lazy" />`
+                    : `<div class="w-full h-full bg-gray-200 rounded flex items-center justify-center transition-all duration-300 group-hover:bg-gray-300 group-hover:shadow-lg group-hover:scale-105 cursor-pointer">
+                    <svg class="w-8 h-8 text-gray-400 group-hover:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                  </div>`
+                }
+              </a>
+            </div>
+            
+            <!-- 書籍基本資訊 -->
+            <div class="text-center mb-3">
+              <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                <a href="/zh-tw/subjects/${book.data.category}/${book.slug.split('/').slice(1).join('/') || book.slug.split('/').pop()}" class="hover:text-blue-600 transition-colors">
+                  ${book.data.title}
+                </a>
+              </h3>
+              <p class="text-sm text-gray-600 mb-2">
+                ${
+                  book.data.author &&
+                  (book.data.author.includes(',') ||
+                    book.data.author.includes('、') ||
+                    book.data.author.includes(' and ') ||
+                    book.data.author.includes(' & '))
+                    ? book.data.author.split(/[,、]|and|&/)[0].trim() + ' 等'
+                    : book.data.author || '未知作者'
+                }
+              </p>
+              
+              <!-- 分类、难度和级别标签 -->
+              <div class="flex flex-wrap justify-center items-center gap-2 mb-3">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                   ${getCategoryName(book.data.category)}
+                </span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${difficultyColors[book.data.difficulty] || 'bg-yellow-100 text-yellow-800'}">
+                  ${getDifficultyName(book.data.difficulty) || '中級'}
+                </span>
+                ${
+                  book.data.level && book.data.level !== 'undefined'
+                    ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    ${tagTranslations[book.data.level.toLowerCase()] || book.data.level}
+                  </span>`
+                    : ''
+                }
+              </div>
+            </div>
+          </div>
+        `;
+        booksGrid.appendChild(bookCard.firstElementChild);
+      });
+
+      currentPage++;
+      loading = false;
+      document.getElementById('load-more-btn').disabled = false;
+      document.getElementById('load-more-btn').innerHTML = `
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
+        載入更多
+      `;
+    }, 1000);
+  }
+
+  // Load more button event listener
+  document.getElementById('load-more-btn').addEventListener('click', loadMoreBooks);
+</script>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

@@ -1,0 +1,41 @@
+---
+import BookLayout from '../../../../layouts/BookLayout.astro';
+import {
+  getAllContentByLanguage,
+  findBookEntry,
+  type Subject,
+} from '../../../../lib/content-utils';
+import { renderMarkdownToHtml } from '../../../../lib/markdown';
+
+export async function getStaticPaths() {
+  const allBooks = await getAllContentByLanguage('zh-tw');
+
+  return allBooks.map(book => ({
+    params: {
+      subject: book.subject,
+      slug: book.bookSlug,
+    },
+    props: {
+      subject: book.subject,
+      slug: book.bookSlug,
+    },
+  }));
+}
+
+interface PageProps {
+  subject: Subject;
+  slug: string;
+}
+
+const { subject, slug } = Astro.props as PageProps;
+const book = await findBookEntry('zh-tw', subject, slug);
+
+if (!book) {
+  throw new Error(`Unable to locate book for subject "${subject}" and slug "${slug}"`);
+}
+const contentHtml = renderMarkdownToHtml(book.body);
+---
+
+<BookLayout book={book}>
+  <div set:html={contentHtml} />
+</BookLayout>

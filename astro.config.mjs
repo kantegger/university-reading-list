@@ -1,0 +1,63 @@
+// @ts-check
+import { defineConfig } from 'astro/config';
+import tailwind from '@astrojs/tailwind';
+import sitemap from '@astrojs/sitemap';
+
+// https://astro.build/config
+export default defineConfig({
+  site: 'https://unireadinglist.com',
+  integrations: [
+    tailwind(),
+    sitemap({
+      customPages: [
+        'https://unireadinglist.com/en/subjects',
+        'https://unireadinglist.com/ja/subjects',
+        'https://unireadinglist.com/zh-cn/subjects',
+        'https://unireadinglist.com/zh-tw/subjects',
+        'https://unireadinglist.com/search',
+      ],
+    }),
+  ],
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/sharp',
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      exclude: ['@astrojs/image'],
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          assetFileNames: '_astro/[name].[hash][extname]',
+          chunkFileNames: '_astro/[name].[hash].js',
+          entryFileNames: '_astro/[name].[hash].js',
+          manualChunks: {
+            vendor: ['astro']
+          },
+        },
+      },
+      chunkSizeWarningLimit: 20000, // 20MB warning instead of default 500KB
+    },
+    server: {
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    },
+    resolve: {
+      alias: {
+        '@components': new URL('./src/components', import.meta.url).pathname,
+        '@layouts': new URL('./src/layouts', import.meta.url).pathname,
+        '@pages': new URL('./src/pages', import.meta.url).pathname,
+        '@assets': new URL('./src/assets', import.meta.url).pathname,
+        '@styles': new URL('./src/styles', import.meta.url).pathname,
+        '@lib': new URL('./src/lib', import.meta.url).pathname,
+        '@': new URL('./src', import.meta.url).pathname,
+      },
+    },
+  },
+  build: {
+    assets: '_astro',
+  },
+});
